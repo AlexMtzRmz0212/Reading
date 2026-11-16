@@ -1,0 +1,558 @@
+@import "tailwindcss";
+
+/* Reading List: the library card catalog. The page is the open drawer on a reading-room desk; every book is a 3×5
+   index card. Light is the desk in daylight (green blotter, buff cards, oak drawer front); dark is the drawer at
+   night. See DESIGN.md. */
+:root {
+  color-scheme: light dark;
+  --ground: #dde2d6; /* desk blotter */
+  --card: #f8f3e3; /* buff card stock */
+  --edge: #d9cfb2; /* the card's edge: one tone step, no shadow */
+  --manila: #ecd9a4; /* guide-card tabs */
+  --ink: #1d1b17;
+  --soft: #595348; /* secondary typed lines */
+  --rule: #b9cddc; /* blue ruled lines (decoration only) */
+  --red: #b3372b; /* the card's top rule, ON LOAN, errors */
+  --stamp: #43388a; /* date-stamp ink: the one interactive colour */
+  --on-stamp: #f8f3e3;
+  --brass: #a8842f; /* label holder, rod hole */
+  --oak: #6f4a2a; /* drawer front */
+  --on-oak: #f8f3e3;
+  --pencil: #5f6368;
+  --line: 1.5rem; /* the ruled-line pitch every card field sits on */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #191512;
+    --card: #2a2620;
+    --edge: #40392e;
+    --manila: #4a3f27;
+    --ink: #ece4d0;
+    --soft: #b5ab95;
+    --rule: #3d4a57;
+    --red: #ea7b6c;
+    --stamp: #a99cf5;
+    --on-stamp: #191512;
+    --brass: #d3ac55;
+    --oak: #33251a;
+    --on-oak: #ece4d0;
+    --pencil: #a9aeb5;
+  }
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-card: var(--card);
+  --color-edge: var(--edge);
+  --color-manila: var(--manila);
+  --color-ink: var(--ink);
+  --color-soft: var(--soft);
+  --color-rule: var(--rule);
+  --color-red: var(--red);
+  --color-stamp: var(--stamp);
+  --color-on-stamp: var(--on-stamp);
+  --color-brass: var(--brass);
+  --color-oak: var(--oak);
+  --color-on-oak: var(--on-oak);
+  --color-pencil: var(--pencil);
+  --font-sans: var(--font-courier), ui-monospace, "Courier New", monospace;
+  --font-serif: var(--font-gentium), "Iowan Old Style", Georgia, serif;
+  --font-pencil: var(--font-caveat), "Segoe Print", cursive;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  html {
+    /* Anchors and focused controls land below the sticky guide tabs. */
+    scroll-padding-top: 4.5rem;
+    scrollbar-gutter: stable;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (pointer: fine) {
+    html {
+      overscroll-behavior-y: none;
+    }
+  }
+  a,
+  button,
+  label,
+  input,
+  select,
+  textarea,
+  summary {
+    touch-action: manipulation;
+  }
+  select option {
+    background: var(--card);
+    color: var(--ink);
+  }
+  ::selection {
+    background: var(--stamp);
+    color: var(--on-stamp);
+  }
+  :focus-visible {
+    outline: 2px solid var(--stamp);
+    outline-offset: 2px;
+  }
+  /* On the oak drawer front the violet ring would vanish. */
+  .on-oak :focus-visible {
+    outline-color: var(--on-oak);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply relative inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-sm border border-ink/60 bg-card px-4 text-[15px] font-bold whitespace-nowrap text-ink disabled:cursor-default disabled:opacity-50 sm:min-h-10;
+    transition:
+      transform 100ms var(--ease-out),
+      border-color 150ms ease,
+      background-color 150ms ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    @apply border-stamp bg-stamp text-on-stamp;
+  }
+  .btn-quiet {
+    @apply border-transparent bg-transparent font-normal underline decoration-soft/60 underline-offset-4;
+  }
+  .input {
+    @apply min-h-11 w-full rounded-sm border border-ink/45 bg-card px-3 text-[15px] text-ink placeholder:text-soft disabled:opacity-60 sm:min-h-10;
+    transition: border-color 150ms ease;
+  }
+  .input:focus {
+    border-color: var(--stamp);
+  }
+  .label {
+    @apply mb-1 block text-[13px] text-soft;
+  }
+  .page-title {
+    @apply font-serif text-[26px] leading-[1.15] font-bold text-balance break-words sm:text-[32px];
+  }
+  .link {
+    @apply text-stamp underline decoration-stamp/50 underline-offset-4;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .guide-tab:hover {
+    background: var(--card);
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--ink);
+  }
+  .btn-primary:hover:not(:disabled) {
+    border-color: var(--ink);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    border-color: transparent;
+    text-decoration-color: var(--ink);
+  }
+  .link:hover {
+    text-decoration-color: var(--stamp);
+  }
+}
+
+/* ── The index card ─────────────────────────────────────────────────────────────────────────────────────────── */
+
+.index-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* 5:3 at least; min-height stays auto so a card grows when its title wraps instead of clipping. */
+  aspect-ratio: 5 / 3;
+  background: var(--card);
+  border: 1px solid var(--edge);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem 0.3rem;
+  border-bottom: 1.5px solid var(--red);
+}
+
+.call-number {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The ruled body: every line of text sits on one blue rule. */
+.card-lines {
+  flex: 1;
+  padding: 0 1rem;
+  line-height: var(--line);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px), var(--rule) var(--line));
+  background-position: 0 0;
+}
+.card-lines > * {
+  /* Hanging indent, as a typist sets the lines under the author heading. */
+  padding-left: 1.5rem;
+}
+.card-lines > .card-author {
+  padding-left: 0;
+  font-weight: 700;
+}
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 1.3125rem;
+  line-height: var(--line);
+  overflow-wrap: anywhere;
+}
+.card-original {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+.card-meta {
+  font-size: 0.875rem;
+  color: var(--soft);
+}
+
+.card-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 1rem 0.45rem;
+}
+
+/* Where the drawer's brass rod runs through every card. */
+.rod-hole {
+  position: absolute;
+  left: 50%;
+  bottom: 0.6rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-left: -0.4rem;
+  border-radius: 50%;
+  background: var(--ground);
+  border: 1px solid var(--edge);
+}
+
+.cover-clip {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.8rem;
+  width: 3rem;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background: var(--edge);
+  border: 1px solid var(--edge);
+  transform: rotate(2deg);
+}
+/* Room for the clipped cover beside the first lines. */
+.has-cover .card-lines > * {
+  margin-right: 3.5rem;
+}
+
+.pencil {
+  font-family: var(--font-pencil);
+  font-size: 1.2rem;
+  line-height: var(--line);
+  color: var(--pencil);
+}
+
+/* The card as a button: the whole face opens its slip. */
+.card-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: transform 160ms var(--ease-out);
+}
+.card-button:active {
+  transform: scale(0.985);
+}
+/* Cards in one row share a height: the card fills its link, and still grows with its own content. */
+.card-stretch {
+  display: flex;
+  flex-direction: column;
+}
+.card-stretch > .index-card {
+  flex: 1 0 auto;
+}
+/* In the drawer long titles are cut short so rows stay even; the pulled card shows them whole. */
+.card-button .card-title,
+.card-button .card-original {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-button .card-title {
+  -webkit-line-clamp: 3;
+}
+.card-button .card-original {
+  -webkit-line-clamp: 2;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card-button:hover {
+    transform: translateY(-2px);
+  }
+  .card-button:hover:active {
+    transform: translateY(-1px) scale(0.985);
+  }
+}
+
+/* ── Stamps ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.stamp {
+  display: inline-block;
+  padding: 0.1rem 0.5rem 0;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--stamp);
+  transform: rotate(-5deg);
+  transform-origin: center;
+}
+.stamp-loan {
+  color: var(--red);
+  transform: rotate(-3deg);
+}
+.stamp-awaiting {
+  color: var(--soft);
+  border-style: dashed;
+  transform: rotate(-2deg);
+}
+/* A date from the date stamp: no box, a little off-square. */
+.stamp-date {
+  display: inline-block;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--stamp);
+  transform: rotate(-1.5deg);
+  white-space: nowrap;
+}
+
+/* ── Drawer: guide tabs and sections ────────────────────────────────────────────────────────────────────────── */
+
+.guide-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.7rem 0;
+  background: var(--manila);
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: transform 100ms var(--ease-out);
+}
+.guide-tab:active {
+  transform: translateY(2px);
+}
+.guide-tab[aria-current="true"] {
+  background: var(--card);
+  border-top: 3px solid var(--red);
+}
+/* The tab standing up from a guide card at the start of each run of cards. */
+.guide-card {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  border-bottom: 2px solid var(--edge);
+}
+.guide-card > .guide-tab {
+  min-height: 2.25rem;
+  pointer-events: none;
+}
+
+/* ── Date-due slip ──────────────────────────────────────────────────────────────────────────────────────────── */
+
+.slip {
+  background: var(--card);
+  border: 1px solid var(--edge);
+  border-radius: 3px;
+}
+.slip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.slip-grid > * {
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+}
+.slip-grid > :nth-child(odd) {
+  border-right: 1px solid var(--rule);
+}
+
+/* Pages read, as a pencil tally. */
+.tally {
+  height: 0.6rem;
+  border: 1.5px solid var(--pencil);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tally > span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: repeating-linear-gradient(115deg, var(--pencil) 0 2px, transparent 2px 5px);
+  transform-origin: left;
+  transition: transform 300ms var(--ease-out);
+}
+
+/* ── Sheet (dialog) ─────────────────────────────────────────────────────────────────────────────────────────── */
+
+.sheet {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.sheet::backdrop {
+  background: rgb(20 16 12 / 0.55);
+}
+.sheet-panel {
+  box-shadow: 0 24px 60px rgb(20 16 12 / 0.35);
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+}
+
+/* ── Motion (see DESIGN.md). Everything below is extra: with reduced motion the page is complete and still. ── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* Cards settle into the drawer, once, on first load. */
+  .settle {
+    animation: settle 260ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 35ms);
+  }
+
+  .sheet[open] .sheet-panel {
+    animation: sheet-in 200ms var(--ease-out) both;
+  }
+  .sheet[open]::backdrop {
+    animation: fade-in 200ms ease-out both;
+  }
+  /* The slip turns over on its left edge once the card has landed. */
+  .sheet[open] .slip-turn {
+    transform-origin: left center;
+    animation: turn-over 240ms var(--ease-out) 60ms both;
+  }
+
+  /* The rubber stamp comes down, then the ink spreads. */
+  .stamp-thump {
+    animation: thump 200ms var(--ease-out) both;
+  }
+  .stamp-thump::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    opacity: 0;
+    animation: bloom 260ms ease-out 140ms both;
+  }
+}
+
+/* Reduced motion keeps the fades that say "this just appeared" and drops every movement. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] .sheet-panel,
+  .sheet[open]::backdrop,
+  .stamp-thump {
+    animation: fade-in 160ms ease-out both;
+  }
+  .card-button,
+  .btn,
+  .guide-tab,
+  .tally > span {
+    transition: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes turn-over {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-35deg);
+  }
+}
+@keyframes thump {
+  from {
+    opacity: 0;
+    transform: rotate(-12deg) scale(1.45);
+  }
+}
+@keyframes bloom {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}

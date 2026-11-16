@@ -179,3 +179,13 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# Node / Next.js
+node_modules/
+.next*/
+next-env.d.ts
+*.tsbuildinfo
+.env*.local
+.vercel
+.taste-skill/
+
+.claude
