@@ -10,7 +10,9 @@ export interface Book {
   originalTitle?: string;
   author?: string;
   genres: string[];
-  /** Notion keeps Year as text ("1949", "c. 350 BC"). */
+  /** The Published date, YYYY-MM-DD (a year alone is 1 January). */
+  published?: string;
+  /** Just the year of `published`: what the catalog shows and filters by. */
   year?: string;
   pages?: number;
   currentPage?: number;
@@ -23,6 +25,8 @@ export interface Book {
   started?: string;
   completed?: string;
   coverUrl?: string;
+  /** Whether the Notion page has an icon (any kind). Owner tools only. */
+  hasIcon?: boolean;
 }
 
 /** What the public catalog shows: everything except the Notion id. */

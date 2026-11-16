@@ -1,6 +1,6 @@
 "use client";
 
-import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
+import { MinusIcon, PencilSimpleIcon, PlusIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { today } from "@/lib/format";
 import { applyProgress, logPage, markFinished, snapshot, type ProgressPatch } from "@/lib/progress";
@@ -18,7 +18,11 @@ export function ProgressLogger({ book, onChange }: { book: Book; onChange: (book
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<Required<ProgressPatch> | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pagesDraft, setPagesDraft] = useState(book.pages ? String(book.pages) : "");
   const fieldId = `page-${book.id}`;
+  const pagesId = `pages-${book.id}`;
+  // The total is locked (read-only) until the owner presses Edit.
+  const [editingPages, setEditingPages] = useState(false);
   const errorId = `${fieldId}-error`;
 
   // The book changed under us (another logger for the same book, a refresh): show its page.
@@ -52,6 +56,28 @@ export function ProgressLogger({ book, onChange }: { book: Book; onChange: (book
     if (Object.keys(result.value).length === 0) return setMsg({ ok: true, text: `Already on page ${page}.` });
     const finished = result.value.status === "Done";
     void send({ page }, result.value, finished ? "Finished. Stamped in Notion." : `Logged page ${result.value.currentPage ?? page}.`);
+  }
+
+  /** Close the inline editor; `save` writes the draft (shown at once, put back if the write fails). */
+  async function finishPages(save: boolean) {
+    if (!editingPages) return;
+    setEditingPages(false);
+    if (!save) return;
+    const value = pagesDraft.trim() === "" ? null : Number(pagesDraft);
+    if (value === (book.pages ?? null)) return;
+    if (value !== null && (!Number.isInteger(value) || value < 1)) return setMsg({ ok: false, text: "Total pages must be a whole number, 1 or more." });
+    const before = book;
+    setMsg(null);
+    onChange({ ...book, pages: value ?? undefined });
+    const res = await fetch(`/api/books/${encodeURIComponent(book.id)}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ pages: value }) }).catch(() => null);
+    const data = ((await res?.json().catch(() => null)) ?? {}) as { book?: Book; error?: string };
+    if (res?.ok && data.book) {
+      onChange(data.book);
+      setMsg({ ok: true, text: value === null ? "Cleared the total pages." : `Total pages set to ${value}.` });
+    } else {
+      onChange(before);
+      setMsg({ ok: false, text: data.error ?? "Couldn’t reach the server. Nothing was changed." });
+    }
   }
 
   const typed = draft.trim() === "" ? NaN : Number(draft);
@@ -101,6 +127,50 @@ export function ProgressLogger({ book, onChange }: { book: Book; onChange: (book
         <button type="button" className="btn" disabled={busy} onClick={() => log(current + 25)} aria-label="Log 25 more pages">
           +25
         </button>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <label htmlFor={pagesId} className="text-[13px] text-soft">
+          Total pages
+        </label>
+        {/* Locked until clicked; then the number itself becomes the field, in the same spot. Enter or click away saves, Escape cancels. */}
+        {editingPages ? (
+          <input
+            id={pagesId}
+            autoFocus
+            className="input h-8 w-20 text-center tabular-nums"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="off"
+            placeholder="–"
+            value={pagesDraft}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setPagesDraft(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+            onBlur={() => void finishPages(true)}
+            onKeyDown={(e) => {
+              // Enter here saves the total, not the current page.
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void finishPages(true);
+              } else if (e.key === "Escape") {
+                void finishPages(false);
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            id={pagesId}
+            className="group inline-flex h-8 w-20 items-center justify-center gap-1.5 rounded-[3px] border border-transparent tabular-nums transition-colors hover:border-rule hover:bg-ground/60"
+            aria-label={`Total pages: ${book.pages ?? "not set"}. Edit`}
+            onClick={() => {
+              setPagesDraft(book.pages ? String(book.pages) : "");
+              setEditingPages(true);
+            }}
+          >
+            {book.pages ?? "–"}
+            <PencilSimpleIcon size={12} aria-hidden className="text-soft opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+          </button>
+        )}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
         {book.status !== "Done" && (

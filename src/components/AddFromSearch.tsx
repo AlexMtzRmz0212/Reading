@@ -21,12 +21,12 @@ interface Draft {
   title: string;
   originalTitle: string;
   author: string;
-  year: string;
+  published: string;
   pages: string;
   coverUrl: string;
   genres: string[];
 }
-const EMPTY: Draft = { title: "", originalTitle: "", author: "", year: "", pages: "", coverUrl: "", genres: [] };
+const EMPTY: Draft = { title: "", originalTitle: "", author: "", published: "", pages: "", coverUrl: "", genres: [] };
 
 /** Owner screen: find a book on Open Library (or type it in), check it against the catalog, and file a new card. */
 export function AddFromSearch({ known: initialKnown, choices }: { known: Known[]; choices: Choices }) {
@@ -73,7 +73,7 @@ export function AddFromSearch({ known: initialKnown, choices }: { known: Known[]
   function use(r: SearchResult) {
     const author = r.authors[0] ?? "";
     const genres = suggestGenres(r.subjects, choices.genres);
-    setDraft({ title: r.title, originalTitle: r.title, author: matchOption(author, choices.authors) ?? author, year: r.year ?? "", pages: r.pages ? String(r.pages) : "", coverUrl: r.coverUrl ?? "", genres });
+    setDraft({ title: r.title, originalTitle: r.title, author: matchOption(author, choices.authors) ?? author, published: r.year ?? "", pages: r.pages ? String(r.pages) : "", coverUrl: r.coverUrl ?? "", genres });
     setSuggested(genres);
     setAnyway(false);
     setMsg(null);
@@ -169,8 +169,8 @@ export function AddFromSearch({ known: initialKnown, choices }: { known: Known[]
           </label>
           <div className="grid grid-cols-2 gap-4">
             <label>
-              <span className="label">Year</span>
-              <input className="input" name="year" autoComplete="off" maxLength={20} value={draft.year} onChange={(e) => set("year", e.target.value)} />
+              <span className="label">Published</span>
+              <input className="input tabular-nums" name="published" autoComplete="off" maxLength={10} placeholder="1949 or 1949-06-08" value={draft.published} onChange={(e) => set("published", e.target.value.replace(/[^0-9-]/g, ""))} />
             </label>
             <label>
               <span className="label">Pages</span>

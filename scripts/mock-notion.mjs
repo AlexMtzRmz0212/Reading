@@ -25,7 +25,7 @@ const pages = seed.map((b, i) => ({
     "Original Name": { rich_text: rich(b.orig === "=" ? b.name : b.orig) },
     Author: { select: b.author ? { name: b.author } : null },
     Genre: { multi_select: (b.genres ?? []).map((name) => ({ name })) },
-    Year: { rich_text: rich(b.year) },
+    Published: { date: b.year ? { start: `${b.year}-01-01` } : null },
     Pages: { number: b.pages ?? null },
     "Current page": { number: b.cur ?? null },
     "Progress percentage": { formula: { type: "number", number: b.pages && b.cur != null ? b.cur / b.pages : null } },
@@ -33,7 +33,7 @@ const pages = seed.map((b, i) => ({
     Started: { date: b.started ? { start: b.started } : null },
     Completed: { date: b.completed ? { start: b.completed } : null },
     Relevancy: { select: b.top ? { name: b.top } : null },
-    "Alex Relevance/Score": { number: b.score ?? null },
+    "Score": { number: b.score ?? null },
   },
 }));
 
@@ -48,7 +48,7 @@ const schema = () => ({
     "Original Name": { type: "rich_text", rich_text: {} },
     Author: { type: "select", select: { options: optionsOf("Author", (p) => [p.select?.name]) } },
     Genre: { type: "multi_select", multi_select: { options: GENRES.map((name) => ({ name })) } },
-    Year: { type: "rich_text", rich_text: {} },
+    Published: { type: "date", date: {} },
     Pages: { type: "number", number: {} },
     "Current page": { type: "number", number: {} },
     "Progress percentage": { type: "formula", formula: {} },
@@ -56,7 +56,7 @@ const schema = () => ({
     Started: { type: "date", date: {} },
     Completed: { type: "date", date: {} },
     Relevancy: { type: "select", select: { options: optionsOf("Relevancy", (p) => [p.select?.name]) } },
-    "Alex Relevance/Score": { type: "number", number: {} },
+    "Score": { type: "number", number: {} },
   },
 });
 
@@ -117,6 +117,7 @@ createServer((req, res) => {
       }
       send(404, { object: "error", status: 404, code: "not_found", message: `Mock has no ${req.method} ${path}` });
     } catch (error) {
+      console.log(`ERROR  ${req.method} ${req.url}  ${raw.slice(0, 400)}`);
       send(error.status ?? 500, { object: "error", status: error.status ?? 500, code: "validation_error", message: error.message });
     }
   });

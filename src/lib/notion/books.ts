@@ -28,8 +28,14 @@ export async function listChoices(): Promise<Choices> {
 
 export async function updateBook(pageId: string, patch: BookPatch): Promise<void> {
   const properties = patchToProperties(patch);
-  if (Object.keys(properties).length === 0) return;
-  await notion().pages.update({ page_id: pageId, properties });
+  const hasProperties = Object.keys(properties).length > 0;
+  if (!hasProperties && !patch.cover && !patch.icon) return;
+  await notion().pages.update({
+    page_id: pageId,
+    ...(hasProperties ? { properties } : {}),
+    ...(patch.cover ? { cover: external(patch.cover) } : {}),
+    ...(patch.icon ? { icon: external(patch.icon) } : {}),
+  });
 }
 
 // Notion allows about 3 requests per second per integration.

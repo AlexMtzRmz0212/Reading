@@ -1,4 +1,5 @@
 import { slugify } from "../format";
+import { yearOf } from "../published";
 import { formatRank, parseRank } from "../ranks";
 import { STATUSES, type Book, type Status } from "../types";
 import type { NotionAny } from "./client";
@@ -18,6 +19,7 @@ export function pageToBook(page: NotionAny, titleProp: string): Book {
   const title = text(p[titleProp]).trim();
   const status = choice(p[FIELD.status]);
   const pages = num(p[FIELD.pages]);
+  const published = day(p[FIELD.published]);
   return {
     id: page.id,
     slug: slugify(title, page.id),
@@ -25,7 +27,8 @@ export function pageToBook(page: NotionAny, titleProp: string): Book {
     originalTitle: text(p[FIELD.originalName]).trim() || undefined,
     author: choice(p[FIELD.author])?.trim() || undefined,
     genres: names(p[FIELD.genre]),
-    year: text(p[FIELD.year]).trim() || undefined,
+    published,
+    year: yearOf(published),
     pages: pages && pages > 0 ? pages : undefined,
     currentPage: num(p[FIELD.currentPage]),
     status: STATUSES.includes(status as Status) ? (status as Status) : "Not started",
@@ -34,6 +37,7 @@ export function pageToBook(page: NotionAny, titleProp: string): Book {
     started: day(p[FIELD.started]),
     completed: day(p[FIELD.completed]),
     coverUrl: image(page.cover),
+    hasIcon: Boolean(page.icon),
   };
 }
 
@@ -45,6 +49,12 @@ export interface BookPatch {
   completed?: string | null;
   rank?: number | null;
   score?: number | null;
+  pages?: number | null;
+  published?: string | null;
+  genres?: string[];
+  /** Page cover and icon: an image address, written as an external image (not Notion properties). */
+  cover?: string;
+  icon?: string;
 }
 
 const date = (value: string | null) => ({ date: value ? { start: value } : null });
@@ -58,6 +68,9 @@ export function patchToProperties(patch: BookPatch): Record<string, NotionAny> {
   // Top is a select with text values: Notion adds the option ("93", "94"…) the first time a place is used.
   if (patch.rank !== undefined) out[FIELD.top] = { select: patch.rank ? { name: formatRank(patch.rank) } : null };
   if (patch.score !== undefined) out[FIELD.score] = { number: patch.score };
+  if (patch.pages !== undefined) out[FIELD.pages] = { number: patch.pages };
+  if (patch.published !== undefined) out[FIELD.published] = date(patch.published);
+  if (patch.genres !== undefined) out[FIELD.genre] = { multi_select: patch.genres.map((name) => ({ name })) };
   return out;
 }
 
@@ -66,7 +79,8 @@ export interface NewBook {
   originalTitle?: string;
   author?: string;
   genres?: string[];
-  year?: string;
+  /** YYYY-MM-DD */
+  published?: string;
   pages?: number;
   coverUrl?: string;
 }
@@ -83,7 +97,7 @@ export function newBookToProperties(input: NewBook, titleProp: string): Record<s
   // A select: writing a name that isn’t an option yet creates it.
   if (input.author) out[FIELD.author] = { select: { name: input.author } };
   if (input.genres?.length) out[FIELD.genre] = { multi_select: input.genres.map((name) => ({ name })) };
-  if (input.year) out[FIELD.year] = { rich_text: rich(input.year) };
+  if (input.published) out[FIELD.published] = date(input.published);
   if (input.pages) out[FIELD.pages] = { number: input.pages };
   return out;
 }

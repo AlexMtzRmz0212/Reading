@@ -6,7 +6,7 @@ import { today } from "@/lib/format";
 import { getLibrary, invalidateLibrary } from "@/lib/library";
 import { updateBook } from "@/lib/notion/books";
 import type { BookPatch } from "@/lib/notion/mapper";
-import { applyProgress, logPage, markFinished, parseRestore } from "@/lib/progress";
+import { applyProgress, logPage, markFinished, parsePages, parseRestore } from "@/lib/progress";
 import { parseScore } from "@/lib/ranks";
 
 /**
@@ -15,6 +15,7 @@ import { parseScore } from "@/lib/ranks";
  *   { finished: true }     mark the book finished
  *   { restore: {...} }     undo: put status, page and dates back
  *   { score: 8.5 | null }  set or clear the score
+ *   { pages: 320 | null }  set or clear the total page count
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ pageId: string }> }) {
   const denied = await requireOwner();
@@ -41,6 +42,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
       const result = parseScore(body.score);
       if (!result.ok) return bad(result.error);
       patch = { score: result.value };
+    } else if ("pages" in body) {
+      const result = parsePages(body.pages);
+      if (!result.ok) return bad(result.error);
+      patch = { pages: result.value };
     } else {
       return bad("Nothing to change");
     }
@@ -48,9 +53,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
     await updateBook(pageId, patch);
     invalidateLibrary();
     revalidatePath("/", "layout");
-    const { score, ...progress } = patch;
+    const { score, pages, ...progress } = patch;
     const next = applyProgress(book, progress);
-    return NextResponse.json({ book: score === undefined ? next : { ...next, score: score ?? undefined } });
+    return NextResponse.json({
+      book: {
+        ...next,
+        ...(score !== undefined && { score: score ?? undefined }),
+        ...(pages !== undefined && { pages: pages ?? undefined }),
+      },
+    });
   } catch (error) {
     return fail(error);
   }

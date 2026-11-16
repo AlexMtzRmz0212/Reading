@@ -14,6 +14,13 @@ export interface ProgressPatch {
 const MAX_PAGE = 100_000;
 const isPage = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= MAX_PAGE;
 
+/** The book’s total page count: a whole number from 1, or null to clear it. */
+export function parsePages(value: unknown): Result<number | null> {
+  if (value === null) return { ok: true, value: null };
+  if (!isPage(value) || value < 1) return { ok: false, error: "Total pages must be a whole number, 1 or more" };
+  return { ok: true, value };
+}
+
 /** The reader is now on `page`. `today` is YYYY-MM-DD in the owner’s time zone. */
 export function logPage(book: ProgressState, page: unknown, today: string): Result<ProgressPatch> {
   if (!isPage(page)) return { ok: false, error: "The page must be a whole number, 0 or more" };

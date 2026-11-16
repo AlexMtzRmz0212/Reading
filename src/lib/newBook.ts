@@ -2,6 +2,7 @@
 import { matchOption } from "./dedupe";
 import { normalize } from "./format";
 import type { NewBook } from "./notion/mapper";
+import { toPublished } from "./published";
 import type { Choices, Result } from "./types";
 
 const text = (value: unknown, max: number): string | undefined => {
@@ -33,6 +34,8 @@ export function parseNewBook(body: Record<string, unknown>, choices: Choices): R
   const pages = body.pages;
   if (pages != null && pages !== "" && (typeof pages !== "number" || !Number.isInteger(pages) || pages < 1 || pages > 100_000)) return { ok: false, error: "Pages must be a whole number" };
   if (body.coverUrl != null && body.coverUrl !== "" && !coverUrlOf(body.coverUrl)) return { ok: false, error: "The cover must be an https:// image address" };
+  const published = text(body.published, 20);
+  if (published && !toPublished(published)) return { ok: false, error: "Published must be a year (1949) or a date (1949-06-08)" };
   const genres = Array.isArray(body.genres) ? [...new Set(body.genres.flatMap((g) => (typeof g === "string" ? (matchOption(g, choices.genres) ?? []) : [])))] : [];
   return {
     ok: true,
@@ -41,7 +44,7 @@ export function parseNewBook(body: Record<string, unknown>, choices: Choices): R
       originalTitle: text(body.originalTitle, 300),
       author: author ? (matchOption(author, choices.authors) ?? author) : undefined,
       genres,
-      year: text(body.year, 20),
+      published: toPublished(published),
       pages: typeof pages === "number" ? pages : undefined,
       coverUrl: coverUrlOf(body.coverUrl),
     },

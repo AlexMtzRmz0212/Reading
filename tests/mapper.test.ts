@@ -12,7 +12,7 @@ const fullPage = {
     "Original Name": { rich_text: rt("Sofies verden") },
     Author: { select: { name: "Jostein Gaarder" } },
     Genre: { multi_select: [{ name: "Fiction" }, { name: "History" }] },
-    Year: { rich_text: rt("1991") },
+    Published: { date: { start: "1991-01-01" } },
     Pages: { number: 638 },
     "Current page": { number: 132 },
     "Progress percentage": { formula: { type: "number", number: 0.2 } },
@@ -20,7 +20,7 @@ const fullPage = {
     Started: { date: { start: "2022-01-29" } },
     Completed: { date: null },
     Relevancy: { select: { name: "05" } },
-    "Alex Relevance/Score": { number: 8.5 },
+    "Score": { number: 8.5 },
   },
 };
 
@@ -33,6 +33,7 @@ describe("pageToBook", () => {
       originalTitle: "Sofies verden",
       author: "Jostein Gaarder",
       genres: ["Fiction", "History"],
+      published: "1991-01-01",
       year: "1991",
       pages: 638,
       currentPage: 132,
@@ -42,6 +43,7 @@ describe("pageToBook", () => {
       started: "2022-01-29",
       completed: undefined,
       coverUrl: "https://covers.openlibrary.org/b/id/1-L.jpg",
+      hasIcon: false,
     });
   });
 
@@ -90,16 +92,16 @@ describe("writes", () => {
       Status: { status: { name: "Done" } },
       Completed: { date: { start: "2026-11-15" } },
       Started: { date: null },
-      "Alex Relevance/Score": { number: null },
+      "Score": { number: null },
     });
   });
 
-  it("builds a new row: Not started, Year as text, no Relevancy", () => {
-    const props = newBookToProperties({ title: "Dune", originalTitle: "Dune", author: "Frank Herbert", genres: ["Science fiction"], year: "1965", pages: 612 }, "Name");
+  it("builds a new row: Not started, Published as a date, no Relevancy", () => {
+    const props = newBookToProperties({ title: "Dune", originalTitle: "Dune", author: "Frank Herbert", genres: ["Science fiction"], published: "1965-01-01", pages: 612 }, "Name");
     expect(props.Name).toEqual({ title: [{ type: "text", text: { content: "Dune" } }] });
     expect(props.Status).toEqual({ status: { name: "Not started" } });
     expect(props.Author).toEqual({ select: { name: "Frank Herbert" } });
-    expect(props.Year).toEqual({ rich_text: [{ type: "text", text: { content: "1965" } }] });
+    expect(props.Published).toEqual({ date: { start: "1965-01-01" } });
     expect(props.Pages).toEqual({ number: 612 });
     expect(props).not.toHaveProperty("Relevancy");
   });

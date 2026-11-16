@@ -45,23 +45,26 @@ function ScoreField({ book, onSaved }: { book: RankBook; onSaved: (text: string,
   }
 
   return (
-    <input
-      className="input w-14 px-1 text-center tabular-nums"
-      inputMode="decimal"
-      autoComplete="off"
-      aria-label={`Score of ${book.title}, 0 to 10`}
-      placeholder="–"
-      value={draft}
-      disabled={busy}
-      onChange={(e) => setDraft(e.target.value.replace(/[^0-9.,]/g, "").slice(0, 4))}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          void commit();
-        }
-      }}
-    />
+    <label className="flex shrink-0 flex-col items-center gap-0.5">
+      <span className="text-[11px] leading-none text-soft">Score</span>
+      <input
+        className="input w-14 px-1 text-center tabular-nums"
+        inputMode="decimal"
+        autoComplete="off"
+        aria-label={`Score of ${book.title}, 0 to 10`}
+        placeholder="–"
+        value={draft}
+        disabled={busy}
+        onChange={(e) => setDraft(e.target.value.replace(/[^0-9.,]/g, "").slice(0, 4))}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void commit();
+          }
+        }}
+      />
+    </label>
   );
 }
 
